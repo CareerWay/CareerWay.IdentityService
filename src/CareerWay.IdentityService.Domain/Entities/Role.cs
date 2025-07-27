@@ -2,7 +2,7 @@
 
 namespace CareerWay.IdentityService.Domain.Entities;
 
-public class Role : IdentityRole<Guid>
+public class Role : IdentityRole<long>
 {
     public Role()
         : base()

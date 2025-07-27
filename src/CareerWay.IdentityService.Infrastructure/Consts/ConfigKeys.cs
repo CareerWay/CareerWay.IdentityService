@@ -5,17 +5,24 @@ public static class ConfigKeys
     public static class AzureKeyVault
     {
         public const string Uri = "AzureKeyVaultOptions:Uri";
+        public const string TenantId = "AzureKeyVaultOptions:TenantId";
         public const string ClientId = "AzureKeyVaultOptions:ClientId";
         public const string ClientSecret = "AzureKeyVaultOptions:ClientSecret";
-        public const string DirectoryId = "AzureKeyVaultOptions:DirectoryId";
     }
 
-    public static class AccessToken
+    public static class Security
     {
         public const string Issuer = "AccessTokenOptions:Issuer";
         public const string Audience = "AccessTokenOptions:Audience";
         public const string Expiration = "AccessTokenOptions:Expiration";
         public const string SecurityKey = "AccessTokenSecurityKey";
+    }
+
+    public static class CareerWayServices
+    {
+        public const string BaseUrl = "CareerWayServices:BaseUrl";
+        public const string JobSeekerServiceUrl = "CareerWayServices:JobSeekerServiceUrl";
+        public const string CompanyServiceUrl = "CareerWayServices:CompanyServiceUrl";
     }
 
     public static class AzureSQL

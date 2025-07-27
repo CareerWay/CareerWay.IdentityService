@@ -9,5 +9,6 @@ public class UserClaimConfiguration : IEntityTypeConfiguration<UserClaim>
     public void Configure(EntityTypeBuilder<UserClaim> builder)
     {
         builder.ToTable("UserClaims", "Identity");
+        builder.Property(p => p.Id).ValueGeneratedOnAdd();
     }
 }

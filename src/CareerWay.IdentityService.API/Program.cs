@@ -14,7 +14,7 @@ if (app.Environment.IsDevelopment())
     await app.InitializeDatabaseAsync();
 }
 
-app.UseEnableRequestBuffering();
+app.EnableRequestBuffering();
 
 app.UseRequestTime();
 
@@ -26,11 +26,11 @@ app.MapOpenApi();
 
 app.MapScalarApiReference(options =>
 {
-    options.Title = "JobAdvertService Open API";
+    options.Title = "IdentityService Open API";
     options.OperationSorter = OperationSorter.Method;
 });
 
-app.UsePushSerilogProperties();
+app.PushSerilogProperties();
 
 app.UseCustomHttpLogging();
 

@@ -2,6 +2,6 @@
 
 namespace CareerWay.IdentityService.Domain.Entities;
 
-public class UserToken : IdentityUserToken<Guid>
+public class UserToken : IdentityUserToken<long>
 {
 }

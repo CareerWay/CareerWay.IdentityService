@@ -10,6 +10,7 @@ public class SecurityLogConfiguration : IEntityTypeConfiguration<SecurityLog>
     public void Configure(EntityTypeBuilder<SecurityLog> builder)
     {
         builder.ToTable("SecurityLogs", "Identity");
+        builder.Property(p => p.Id).ValueGeneratedOnAdd();
         builder.Property(p => p.UserId).IsRequired();
         builder.Property(p => p.Action).HasMaxLength(SecurityLogConsts.MaxActionLength).IsRequired();
         builder.Property(p => p.CreationDate).HasColumnType("datetime").IsRequired();

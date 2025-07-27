@@ -7,9 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CareerWay.Shared.EventBus.Kafka" Version="1.2.0" />
-    <PackageReference Include="CareerWay.Shared.Json.Newtonsoft" Version="1.2.0" />
-    <PackageReference Include="CareerWay.Shared.Localization.Json" Version="1.2.0" />
+    <PackageReference Include="CareerWay.Shared.EventBus.Kafka" Version="1.3.0" />
+    <PackageReference Include="CareerWay.Shared.Json.Newtonsoft" Version="1.3.0" />
+    <PackageReference Include="CareerWay.Shared.Localization.Json" Version="1.3.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.5" />

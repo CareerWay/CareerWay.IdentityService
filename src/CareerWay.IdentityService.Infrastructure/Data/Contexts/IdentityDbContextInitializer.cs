@@ -16,17 +16,17 @@ public static class WebApplicationExtensions
     public static async Task InitializeDatabaseAsync(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
-        var initializer = scope.ServiceProvider.GetRequiredService<IdentityContextInitializer>();
+        var initializer = scope.ServiceProvider.GetRequiredService<IdentityDbContextInitializer>();
         await initializer.InitializeAsync();
         await initializer.SeedAsync();
     }
 }
 
-public class IdentityContextInitializer
+public class IdentityDbContextInitializer
 {
-    private readonly ILogger<IdentityContextInitializer> _logger;
-    private readonly IdentityContext _context;
-    private readonly UserManager<Company> _userManager;
+    private readonly ILogger<IdentityDbContextInitializer> _logger;
+    private readonly IdentityDbContext _context;
+    private readonly UserManager<User> _userManager;
     private readonly RoleManager<Role> _roleManager;
     private readonly IDateTime _dateTime;
     private readonly IGuidGenerator _guidGenerator;
@@ -41,10 +41,10 @@ public class IdentityContextInitializer
    /// <param name="guidGenerator"></param>
    /// <param name=""></param>
 
-    public IdentityContextInitializer(
-        ILogger<IdentityContextInitializer> logger,
-        IdentityContext context,
-        UserManager<Company> userManager,
+    public IdentityDbContextInitializer(
+        ILogger<IdentityDbContextInitializer> logger,
+        IdentityDbContext context,
+        UserManager<User> userManager,
         RoleManager<Role> roleManager,
         IDateTime dateTime,
         IGuidGenerator guidGenerator
@@ -91,21 +91,6 @@ public class IdentityContextInitializer
         await CreateRoleAsync(new Role(RoleConsts.Administrator));
         await CreateRoleAsync(new Role(RoleConsts.Company));
         await CreateRoleAsync(new Role(RoleConsts.JobSeeker));
-
-        //var administrator = new User
-        //{
-        //    UserName = "CustomAdmin",
-        //    Email = "admin@CareerWay.com",
-        //    EmailConfirmed = true,
-        //    SecurityStamp = Guid.NewGuid().ToString(),
-        //    CreationDate = _dateTime.Now
-        //};
-
-        //if (_userManager.Users.All(u => u.Email != administrator.Email))
-        //{
-        //    var result = await _userManager.CreateAsync(administrator, "Enes123!");
-        //    await _userManager.AddToRolesAsync(administrator, new[] { RoleConstants.Administrator });
-        //}
     }
 
     private async Task CreateRoleAsync(Role role)

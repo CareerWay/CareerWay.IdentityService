@@ -1,10 +1,13 @@
-﻿using CareerWay.Shared.Security.Tokens;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 
 namespace CareerWay.IdentityService.Application.Models;
 
 public class LoginResponse
 {
+    public long? UserId { get; set; }
+
+    public string? Role { get; set; }
+
     public bool Succeeded { get; set; }
 
     public bool Failed { get; set; }
@@ -15,15 +18,13 @@ public class LoginResponse
 
     public bool RequiresEmailConfirmation { get; set; }
 
-    public AccessToken? AccessToken { get; set; }
-
     private LoginResponse()
     {
     }
 
-    public static LoginResponse Success(AccessToken accessToken)
+    public static LoginResponse Success(long userId, string role)
     {
-        return new LoginResponse() { Succeeded = true, AccessToken = accessToken };
+        return new LoginResponse() { Succeeded = true, UserId = userId, Role = role };
     }
 
     public static LoginResponse Fail()

@@ -2,7 +2,7 @@
 
 namespace CareerWay.IdentityService.Domain.Entities;
 
-public class User : IdentityUser<Guid>
+public class User : IdentityUser<long>
 {
     public DateTime LastLoginDate { get; set; }
 

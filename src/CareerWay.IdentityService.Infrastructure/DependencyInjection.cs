@@ -1,9 +1,11 @@
-﻿using CareerWay.IdentityService.Domain.Entities;
-using CareerWay.IdentityService.Domain.Localization;
+﻿using CareerWay.IdentityService.Application.Interfaces;
+using CareerWay.IdentityService.Domain.Entities;
 using CareerWay.IdentityService.Infrastructure.Consts;
 using CareerWay.IdentityService.Infrastructure.Data.Contexts;
 using CareerWay.Shared.Core.Guards;
+using CareerWay.Shared.Guids;
 using CareerWay.Shared.Localization.Json;
+using Confluent.Kafka;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -22,14 +24,17 @@ public static class DependencyInjection
         Guard.Against.Null(services, nameof(services));
         Guard.Against.Null(configuration, nameof(configuration));
 
-        services.AddDbContext<IdentityContext>(options =>
+        services.AddDbContext<IdentityDbContext>(options =>
         {
             options.UseAzureSql(configuration[ConfigKeys.AzureSQL.ConnectionString]);
         });
 
-        services.AddScoped<IdentityContextInitializer>();
+        services.AddScoped<IdentityDbContextInitializer>();
 
-        services.AddSequentialGuidGenerator();
+        services.AddSequentialGuidGenerator(options =>
+        {
+            options.SequentialGuidType = SequentialGuidType.SequentialAtEnd;
+        });
 
         services.AddMachineTimeProvider();
 
@@ -37,106 +42,66 @@ public static class DependencyInjection
 
         services.AddCustomCorrelationId();
 
+        services.AddSnowflakeIdGenerator(o => o.GeneratorId = 1);
+
         services.AddDefaultIdentity<User>(options =>
         {
             options.User.RequireUniqueEmail = true;
             options.SignIn.RequireConfirmedEmail = false;
-            options.Password.RequiredLength = 8;
+            options.Password.RequiredLength = 6;
             options.Password.RequireLowercase = false;
             options.Password.RequireUppercase = false;
             options.Password.RequireNonAlphanumeric = false;
             options.Password.RequireDigit = false;
         })
-        .AddDefaultTokenProviders()
-        .AddRoles<Role>()
-        .AddEntityFrameworkStores<IdentityContext>();
-
-        services.AddIdentityCore<Admin>(options =>
-        {
-            options.User.RequireUniqueEmail = true;
-            options.SignIn.RequireConfirmedEmail = false;
-            options.Password.RequiredLength = 8;
-            options.Password.RequireLowercase = false;
-            options.Password.RequireUppercase = false;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequireDigit = false;
-        })
-        .AddDefaultTokenProviders()
-        .AddRoles<Role>()
-        .AddEntityFrameworkStores<IdentityContext>();
-
-        services.AddIdentityCore<Company>(options =>
-        {
-            options.User.RequireUniqueEmail = true;
-            options.SignIn.RequireConfirmedEmail = false;
-            options.Password.RequiredLength = 8;
-            options.Password.RequireLowercase = false;
-            options.Password.RequireUppercase = false;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequireDigit = false;
-        })
-        .AddDefaultTokenProviders()
-        .AddRoles<Role>()
-        .AddEntityFrameworkStores<IdentityContext>();
-
-        services.AddIdentityCore<JobSeeker>(options =>
-        {
-            options.User.RequireUniqueEmail = true;
-            options.SignIn.RequireConfirmedEmail = false;
-            options.Password.RequiredLength = 8;
-            options.Password.RequireLowercase = false;
-            options.Password.RequireUppercase = false;
-            options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequireDigit = false;
-        })
-        .AddDefaultTokenProviders()
-        .AddRoles<Role>()
-        .AddEntityFrameworkStores<IdentityContext>();
-
-        services.AddJsonStringLocalizer();
-
-        services.Configure<RequestLocalizationOptions>(options =>
-        {
-            CultureInfo[] cultures =
-            [
-                new("tr-TR")
-            ];
-            options.DefaultRequestCulture = new RequestCulture("tr-TR");
-            options.SupportedCultures = cultures;
-            options.SupportedUICultures = cultures;
-            options.RequestCultureProviders = [new AcceptLanguageHeaderRequestCultureProvider()];
-        });
-
-        services.Configure<JsonLocalizationOptions>(options =>
-        {
-            options.Resources
-                .Add<IdentityServiceResource>("/Localization/IdentityService", "IdentityServiceResource", "tr-TR");
-        });
+            .AddDefaultTokenProviders()
+            .AddRoles<Role>()
+            .AddEntityFrameworkStores<IdentityDbContext>();
 
         services.AddSecurity(options =>
         {
-            options.Issuer = configuration.GetValue<string>("AccessTokenOptions:Issuer")!;
-            options.Audience = configuration.GetValue<string>("AccessTokenOptions:Audience")!;
-            options.Expiration = configuration.GetValue<int?>("AccessTokenOptions:Expiration") ?? 360;
-            options.SecurityKey = configuration.GetValue<string>("AccessTokenSecurityKey")!;
+            options.Issuer = configuration[ConfigKeys.Security.Issuer]!;
+            options.Audience = configuration[ConfigKeys.Security.Audience]!;
+            options.Expiration = int.Parse(configuration[ConfigKeys.Security.Expiration]!);
+            options.SecurityKey = configuration[ConfigKeys.Security.SecurityKey]!;
         });
 
-        //services.AddEventBus(options =>
-        //{
-        //    options.ProjectName = "CareerWay";
-        //    options.ServiceName = "IdentityService";
-        //    options.UseKafka(services, kafkaOptions =>
-        //    {
-        //        kafkaOptions.ProducerConfig.BootstrapServers = "localhost:9092"; //TODO: Read from appsettings.json
-        //        kafkaOptions.ConsumerConfig.BootstrapServers = "localhost:9092";
-        //        kafkaOptions.ConsumerConfig.GroupId = "CareerWay.IdentityService.Group";
-        //        kafkaOptions.ConsumerConfig.AutoOffsetReset = AutoOffsetReset.Earliest;
-        //        kafkaOptions.ConsumerConfig.ClientId = "CareerWay.IdentityService";
-        //        kafkaOptions.ConsumerConfig.AllowAutoCreateTopics = true;
-        //        kafkaOptions.AdminClientConfig.AllowAutoCreateTopics = true;
-        //        kafkaOptions.AdminClientConfig.BootstrapServers = "localhost:9092";
-        //    });
-        //});
+        services.AddKafka(eventBusOptions =>
+        {
+            eventBusOptions.ServiceName = configuration[ConfigKeys.Kafka.ServiceName]!;
+            eventBusOptions.ProjectName = configuration[ConfigKeys.Kafka.ProjectName]!;
+        }, kafkaOptions =>
+        {
+            kafkaOptions.ProducerConfig.BootstrapServers = configuration[ConfigKeys.Kafka.ProducerBootstrapServers];
+            kafkaOptions.ProducerConfig.SaslUsername = configuration[ConfigKeys.Kafka.ProducerSaslUsername];
+            kafkaOptions.ProducerConfig.SaslPassword = configuration[ConfigKeys.Kafka.ProducerSaslPassword];
+            kafkaOptions.ProducerConfig.SaslMechanism = SaslMechanism.Plain;
+            kafkaOptions.ProducerConfig.SecurityProtocol = SecurityProtocol.SaslSsl;
+            kafkaOptions.ProducerConfig.ClientId = ConfigKeys.Kafka.ClientId;
+            kafkaOptions.ProducerConfig.AllowAutoCreateTopics = true;
+            kafkaOptions.ProducerConfig.EnableMetricsPush = false;
+
+            kafkaOptions.ConsumerConfig.BootstrapServers = configuration[ConfigKeys.Kafka.ConsumerBootstrapServers];
+            kafkaOptions.ConsumerConfig.SaslUsername = configuration[ConfigKeys.Kafka.ConsumerSaslUsername];
+            kafkaOptions.ConsumerConfig.SaslPassword = configuration[ConfigKeys.Kafka.ConsumerSaslPassword];
+            kafkaOptions.ConsumerConfig.SaslMechanism = SaslMechanism.Plain;
+            kafkaOptions.ConsumerConfig.SecurityProtocol = SecurityProtocol.SaslSsl;
+            kafkaOptions.ConsumerConfig.GroupId = configuration[ConfigKeys.Kafka.GroupId];
+            kafkaOptions.ConsumerConfig.AutoOffsetReset = AutoOffsetReset.Earliest;
+            kafkaOptions.ConsumerConfig.ClientId = configuration[ConfigKeys.Kafka.ClientId];
+            kafkaOptions.ConsumerConfig.AllowAutoCreateTopics = true;
+            kafkaOptions.ConsumerConfig.PartitionAssignmentStrategy = PartitionAssignmentStrategy.RoundRobin;
+            kafkaOptions.ConsumerConfig.EnableMetricsPush = false;
+
+            kafkaOptions.AdminClientConfig.BootstrapServers = configuration[ConfigKeys.Kafka.AdminClientBootstrapServers];
+            kafkaOptions.AdminClientConfig.SaslUsername = configuration[ConfigKeys.Kafka.AdminClientSaslUsername];
+            kafkaOptions.AdminClientConfig.SaslPassword = configuration[ConfigKeys.Kafka.AdminClientPassword];
+            kafkaOptions.AdminClientConfig.SaslMechanism = SaslMechanism.Plain;
+            kafkaOptions.AdminClientConfig.SecurityProtocol = SecurityProtocol.SaslSsl;
+            kafkaOptions.AdminClientConfig.ClientId = configuration[ConfigKeys.Kafka.ClientId];
+            kafkaOptions.AdminClientConfig.AllowAutoCreateTopics = true;
+            kafkaOptions.AdminClientConfig.EnableMetricsPush = false;
+        });
 
         return services;
     }

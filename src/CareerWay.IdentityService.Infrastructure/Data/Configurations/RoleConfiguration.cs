@@ -9,7 +9,6 @@ public class RoleConfiguration : IEntityTypeConfiguration<Role>
     public void Configure(EntityTypeBuilder<Role> builder)
     {
         builder.ToTable("Roles", "Identity");
-        builder.Property(p => p.Id).HasColumnType("uniqueidentifier");
-        builder.Property(p => p.Id).HasDefaultValueSql("newsequentialid()");
+        builder.Property(p => p.Id).ValueGeneratedOnAdd();
     }
 }

@@ -2,7 +2,7 @@ using CareerWay.IdentityService.Application.Models;
 
 namespace CareerWay.IdentityService.Application.Interfaces;
 
-public interface IJobSeekerService
+public interface IUserService
 {
-    Task Create(CreateJobSeekerRequest request);
+    Task<CreateUserResponse> Register(CreateUserRequest request);
 }

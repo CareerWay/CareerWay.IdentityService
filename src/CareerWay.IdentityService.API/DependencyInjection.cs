@@ -1,9 +1,10 @@
-﻿using CareerWay.IdentityService.Infrastructure.Consts;
+﻿using Azure.Identity;
+using CareerWay.IdentityService.Infrastructure.Consts;
 using CareerWay.Shared.Core.Guards;
 using CareerWay.Shared.Serilog;
-using Microsoft.Extensions.Configuration.AzureKeyVault;
 using Serilog;
 using Serilog.Events;
+using Steeltoe.Discovery.Client;
 
 namespace Microsoft.Extensions.DependencyInjection;
 
@@ -18,23 +19,22 @@ public static class DependencyInjection
         Guard.Against.Null(configuration, nameof(configuration));
         Guard.Against.Null(hostBuilder, nameof(hostBuilder));
 
-        var keyVaultUri = configuration.GetValue<string>(ConfigKeys.AzureKeyVault.Uri);
-        var clientId = configuration.GetValue<string>(ConfigKeys.AzureKeyVault.ClientId);
-        var clientSecret = configuration.GetValue<string>(ConfigKeys.AzureKeyVault.ClientSecret);
+        configuration.AddAzureKeyVault(
+            new Uri(configuration[ConfigKeys.AzureKeyVault.Uri]!),
+            new ClientSecretCredential(
+                configuration[ConfigKeys.AzureKeyVault.TenantId],
+                configuration[ConfigKeys.AzureKeyVault.ClientId],
+                configuration[ConfigKeys.AzureKeyVault.ClientSecret]
+            )
+        );
 
-        configuration.AddAzureKeyVault(keyVaultUri, clientId, clientSecret, new DefaultKeyVaultSecretManager());
-
-        services.Configure<RouteOptions>(options =>
-        {
-            options.LowercaseUrls = true;
-            options.LowercaseQueryStrings = true;
-        });
+        services.ConfigureCustomRouteOptions();
 
         services
             .AddControllers()
             .ConfigureApiBehaviorOptions(options => options.SuppressModelStateInvalidFilter = true);
 
-        services.AddEnableRequestBuffering();
+        services.EnableRequestBuffering();
 
         services.AddRequestTime();
 
@@ -53,6 +53,8 @@ public static class DependencyInjection
                 "/openapi/v1.json",
                 "/favicon.ico"
             ];
+            o.ExcludedRequestHeaders = ["Authorization"];
+            o.ExcludedResponseHeaders = ["Authorization"];
         });
 
         hostBuilder.UseSerilog((context, services, configuration) =>
@@ -68,13 +70,16 @@ public static class DependencyInjection
 
         services.AddCustomApiVersioning();
 
-        services.AddCustomOpenApi("v1");
+        services.AddOpenApi("v1");
 
         services.AddAuthentication();
 
         services.AddHttpContextAccessor();
 
         services.AddHttpContextCurrentPrincipalAccessor();
+
+        services.AddDiscoveryClient(configuration);
+
         return services;
     }
 }

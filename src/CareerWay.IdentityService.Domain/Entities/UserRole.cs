@@ -2,6 +2,6 @@
 
 namespace CareerWay.IdentityService.Domain.Entities;
 
-public class UserRole : IdentityUserRole<Guid>
+public class UserRole : IdentityUserRole<long>
 {
 }

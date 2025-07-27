@@ -1,8 +1,6 @@
 ﻿using Asp.Versioning;
 using CareerWay.IdentityService.Application.Interfaces;
 using CareerWay.IdentityService.Application.Models;
-using CareerWay.IdentityService.Application.Services;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -18,7 +16,7 @@ public class LoginController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         var result = await _loginService.Login(request);
         if (result.Succeeded)
